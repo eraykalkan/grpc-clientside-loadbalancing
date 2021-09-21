@@ -5,13 +5,12 @@ import com.eraykalkan.gprcserviceregistry.ServiceRegistry;
 import com.eraykalkan.model.Balance;
 import com.eraykalkan.model.BalanceCheckRequest;
 import com.eraykalkan.model.BankServiceGrpc;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.NameResolverRegistry;
+import io.grpc.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class BankServiceDemo {
 
@@ -40,15 +39,25 @@ public class BankServiceDemo {
 
         for (int i = 0; i < 10; i++) {
             BalanceCheckRequest balanceCheckRequest = BalanceCheckRequest.newBuilder().setAccountNumber(
-                    ThreadLocalRandom.current().nextInt(1,25)
-            )
+                    ThreadLocalRandom.current().nextInt(1,25))
                     .build();
-            Balance balance = bankServiceBlockingStub.getBalance(balanceCheckRequest);
-            System.out.println(
-                    "Received: " + balance.getAmount()
-            );
+
+            // let's add 2 seconds timeout for client
+            try {
+                Balance balance = bankServiceBlockingStub
+                        .withDeadline(Deadline.after(2, TimeUnit.SECONDS))
+                        .getBalance(balanceCheckRequest);
+                System.out.println(
+                        "Received: " + balance.getAmount()
+                );
+            } catch (StatusRuntimeException ex) {
+                ex.printStackTrace();
+            }
+
         }
 
     }
+
+    // balance test
 
 }
